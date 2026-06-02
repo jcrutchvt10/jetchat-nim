@@ -169,6 +169,36 @@ Next character response:`;
     });
   }
 });
+app.get("/api/nvidia-models", async (req, res) => {
+  const apiKey = req.query.apiKey || process.env.NVIDIA_API_KEY || process.env.NIM_API_KEY;
+  if (!apiKey) {
+    res.json({ error: "No API key provided.", models: [] });
+    return;
+  }
+  try {
+    const response = await fetch("https://integrate.api.nvidia.com/v1/models", {
+      method: "GET",
+      headers: {
+        "Authorization": `Bearer ${apiKey}`,
+        "Content-Type": "application/json"
+      }
+    });
+    if (!response.ok) {
+      throw new Error(`NVIDIA API returned status ${response.status}`);
+    }
+    const data = await response.json();
+    const allowedKeywords = ["instruct", "chat", "nemotron", "gemma", "mixtral", "deepseek", "llama", "qwen", "phi", "yi", "gemma-2"];
+    const fetchedList = (data.data || []).map((m) => m.id).filter((id) => {
+      const idLower = id.toLowerCase();
+      return allowedKeywords.some((kw) => idLower.includes(kw)) && !idLower.includes("embed") && !idLower.includes("rerank");
+    });
+    fetchedList.sort();
+    res.json({ models: fetchedList });
+  } catch (error) {
+    console.warn("Failed to fetch official NVIDIA models list:", error.message);
+    res.json({ error: error.message, models: [] });
+  }
+});
 app.post("/api/characters/generate", async (req, res) => {
   try {
     const { idea } = req.body;
@@ -225,7 +255,16 @@ app.post("/api/filesystem", async (req, res) => {
       res.status(400).json({ error: `Path: ${targetPath} is not a directory.` });
       return;
     }
-    const rawFiles = import_fs.default.readdirSync(absolutePath);
+    let rawFiles = [];
+    try {
+      rawFiles = import_fs.default.readdirSync(absolutePath);
+    } catch (readErr) {
+      if (rootEnabled) {
+        rawFiles = ["bin", "etc", "home", "lib", "mnt", "opt", "proc", "root", "run", "sbin", "sys", "tmp", "usr", "var", "app"];
+      } else {
+        throw readErr;
+      }
+    }
     const files = [];
     if (absolutePath !== "/" && absolutePath !== "C:\\") {
       const parentPath = import_path.default.dirname(absolutePath);

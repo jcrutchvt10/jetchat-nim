@@ -2,7 +2,6 @@
 	"appId": "com.jetchat.nim.portal",
 	"appName": "Jetchat Android NIM Portal",
 	"webDir": "dist",
-	"bundledWebRuntime": false,
 	"server": {
 		"androidScheme": "https",
 		"cleartext": true
