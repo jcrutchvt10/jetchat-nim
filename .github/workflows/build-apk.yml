@@ -19,11 +19,11 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 22 # Bumped to meet Capacitor CLI requirements
           cache: 'npm'
 
       - name: Install Node Dependencies
-        run: npm install --include=optional
+        run: npm ci --include=optional # Using clean install for a reliable CI environment
 
       - name: Force Tailwind Linux Native Binary
         run: npm install @tailwindcss/oxide-linux-x64-gnu --no-save
