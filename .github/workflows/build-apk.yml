@@ -52,16 +52,12 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
-      # --- FIXED: Pulling from the official services release CDN ---
+      # --- FIXED: Pulling a standalone, pre-compiled wrapper binary ---
       - name: Fix and Regenerate Gradle Wrapper
         run: |
           cd android
           rm -f gradle/wrapper/gradle-wrapper.jar
-          curl -Lo gradle/wrapper/gradle-wrapper.jar https://services.gradle.org/distributions/gradle-8.2-bin.zip
-          
-          # Quick bash sequence to extract just the pristine JAR out of the distribution zip
-          unzip -j gradle/wrapper/gradle-wrapper.jar "gradle-8.2/lib/plugins/gradle-wrapper-shared-*.jar" -d gradle/wrapper/
-          mv gradle/wrapper/gradle-wrapper-shared-*.jar gradle/wrapper/gradle-wrapper.jar
+          curl -Lo gradle/wrapper/gradle-wrapper.jar https://github.com/gradle/gradle-distributions/raw/main/wrapper/gradle-wrapper.jar
 
       - name: Set Permissions for Gradle Wrapper
         run: chmod +x android/gradlew
