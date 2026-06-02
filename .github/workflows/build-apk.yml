@@ -22,9 +22,11 @@ jobs:
           node-version: 18
           cache: 'npm'
 
-      - name: Install Node Dependencies (With Linux Bindings)
-        run: |
-          npm install --include=optional --os=linux --cpu=x64
+      - name: Install Node Dependencies
+        run: npm install --include=optional
+
+      - name: Force Tailwind Linux Native Binary
+        run: npm install @tailwindcss/oxide-linux-x64-gnu --no-save
 
       - name: Build Web Application
         run: |
