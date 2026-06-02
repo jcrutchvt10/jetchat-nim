@@ -7,7 +7,7 @@ import React from 'react';
 import { Channel, Character } from '../types';
 import { 
   Hash, MessageSquare, Cpu, Sparkles, LogIn, Laptop,
-  HelpCircle, Settings, UserPlus, Sliders, Layers, User, Terminal
+  HelpCircle, Settings, UserPlus, Sliders, Layers, User, Terminal, TrendingUp
 } from 'lucide-react';
 
 interface JetchatDrawerProps {
@@ -16,7 +16,7 @@ interface JetchatDrawerProps {
   activeTarget: { type: 'channel' | 'dm'; id: string };
   onSelectChannel: (id: string) => void;
   onSelectCharacter: (id: string) => void;
-  onMenuClick: (tab: 'chat' | 'labs' | 'hub' | 'sandbox') => void;
+  onMenuClick: (tab: 'chat' | 'labs' | 'hub' | 'sandbox' | 'telemetry') => void;
   onClose: () => void;
 }
 
@@ -154,6 +154,17 @@ export default function JetchatDrawer({
         >
           <Sliders className="w-4 h-4 text-[#76B900]" />
           <span>Inference Settings</span>
+        </button>
+
+        <button
+          onClick={() => {
+            onMenuClick('telemetry');
+            onClose();
+          }}
+          className="w-full flex items-center gap-3 px-3 py-2 text-xs font-semibold rounded-lg bg-cyan-950/20 hover:bg-[#202231] text-cyan-300 hover:text-white transition-all border border-cyan-500/10"
+        >
+          <TrendingUp className="w-4 h-4 text-cyan-400" />
+          <span>NIM Cloud Telemetry</span>
         </button>
       </div>
     </div>

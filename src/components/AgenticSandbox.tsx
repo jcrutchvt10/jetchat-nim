@@ -135,11 +135,11 @@ export default function AgenticSandbox({ onAddLog, triggerHapticFeedback }: Agen
       { log: `🟢 SUCCESS: APK deployed over WebUSB to Pixel 9 Pro XL! App is live and running.`, progress: 100 }
     ] : [
       { log: '🔌 ADB: Initializing connection bridge with device \'PX9-10526B\'...', progress: 5 },
-      { log: '📱 ADB: Verified device model: Google Pixel 9 Pro XL (Android 15, API 35)', progress: 12 },
+      { log: '📱 ADB: Verified device model: Google Pixel 9 Pro XL (Android 17, API 37)', progress: 12 },
       { log: '🔧 ADB: Device architecture verified: arm64-v8a over Secure Shell', progress: 20 },
       { log: `👑 ADB: Root permissions checked on phone: ${rootMode ? 'GRANTED (su privilege active)' : 'RESTRICTED (user sandbox mode)'}`, progress: 30 },
       { log: '📦 Gradle: Assembly task started -> :app:assembleRelease', progress: 42 },
-      { log: '⚡ Gradle: Resolving compile dependencies for SDK level 35...', progress: 55 },
+      { log: '⚡ Gradle: Resolving compile dependencies for Android 17 SDK level 37...', progress: 55 },
       { log: '📝 Gradle: Merging AndroidManifest files & mapping filesystem permissions...', progress: 68 },
       { log: '🛠️ APK: Bundling release resources & executing ProGuard optimizer...', progress: 75 },
       { log: '🔐 APK: Signed com.jetchat.root application metadata safely.', progress: 85 },
@@ -684,7 +684,7 @@ export default function AgenticSandbox({ onAddLog, triggerHapticFeedback }: Agen
               <div className="grid grid-cols-2 gap-2 pt-2 border-t border-[#2E3440]/60 text-[10px] font-mono text-gray-400">
                 <div>
                   <span className="text-gray-600 block text-[9px] uppercase font-sans font-bold">OS Version</span>
-                  <span className="text-gray-300">Android 15 (API 35)</span>
+                  <span className="text-gray-300">Android 17 (API 37)</span>
                 </div>
                 <div>
                   <span className="text-gray-600 block text-[9px] uppercase font-sans font-bold">Filesystem Access</span>

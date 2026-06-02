@@ -25,6 +25,8 @@ interface InferenceConfigProps {
   onSaveGlobal?: (temp: number, topP: number, maxTokens: number) => void;
   messagesMap?: Record<string, Message[]>;
   characters?: Character[];
+  initialTab?: 'hyper' | 'analytics';
+  hideTabBar?: boolean;
 }
 
 // Map of mathematically and creatively optimized hyperparameters for each model type
@@ -151,18 +153,49 @@ export default function InferenceConfig({
   onSaveOverride, 
   onSaveGlobal,
   messagesMap,
-  characters
+  characters,
+  initialTab,
+  hideTabBar = false
 }: InferenceConfigProps) {
   // Navigation tabs inside Labs
-  const [activeSubTab, setActiveSubTab] = React.useState<'hyper' | 'analytics'>('hyper');
+  const [activeSubTab, setActiveSubTab] = React.useState<'hyper' | 'analytics'>(initialTab || 'hyper');
   const [showKeyPassword, setShowKeyPassword] = React.useState(false);
   const [saveStatus, setSaveStatus] = React.useState<string | null>(null);
+
+  // Dynamic NIM Models list from discovery API
+  const [dynamicModels, setDynamicModels] = React.useState<string[]>([]);
+  const [loadingModels, setLoadingModels] = React.useState(false);
 
   // Calibration state managers
   const [autoOptimize, setAutoOptimize] = React.useState(true);
   const [selectedCharId, setSelectedCharId] = React.useState<string>(
     characters?.[0]?.id || 'grover'
   );
+
+  React.useEffect(() => {
+    if (!options.apiKey) {
+      setDynamicModels([]);
+      return;
+    }
+    const fetchModels = async () => {
+      setLoadingModels(true);
+      try {
+        const response = await fetch(`/api/nvidia-models?apiKey=${encodeURIComponent(options.apiKey)}`);
+        const json = await response.json();
+        if (json.models && Array.isArray(json.models)) {
+          setDynamicModels(json.models);
+        } else {
+          setDynamicModels([]);
+        }
+      } catch (err) {
+        console.warn('Failed to fetch dynamic NVIDIA Models via server proxy:', err);
+        setDynamicModels([]);
+      } finally {
+        setLoadingModels(false);
+      }
+    };
+    fetchModels();
+  }, [options.apiKey]);
 
   const handleToggleNvidia = () => {
     onChange({ ...options, useNvidia: !options.useNvidia });
@@ -321,30 +354,32 @@ export default function InferenceConfig({
       </div>
 
       {/* Lab Tabs Bar */}
-      <div className="flex border-b border-[#2E3440]/60 bg-[#15171F] shrink-0 text-xs font-bold font-sans">
-        <button
-          onClick={() => setActiveSubTab('hyper')}
-          className={`flex-1 py-3 text-center border-b-2 flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-            activeSubTab === 'hyper'
-              ? 'border-[#76B900] text-white bg-[#1A1D27]'
-              : 'border-transparent text-gray-400 hover:text-gray-300'
-          }`}
-        >
-          <Sliders className="w-3.5 h-3.5 text-[#76B900]" />
-          <span>Lab Parameters</span>
-        </button>
-        <button
-          onClick={() => setActiveSubTab('analytics')}
-          className={`flex-1 py-3 text-center border-b-2 flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-            activeSubTab === 'analytics'
-              ? 'border-cyan-500 text-white bg-[#1A1D27]'
-              : 'border-transparent text-gray-400 hover:text-gray-300'
-          }`}
-        >
-          <TrendingUp className="w-3.5 h-3.5 text-cyan-400" />
-          <span>Performance Analytics</span>
-        </button>
-      </div>
+      {!hideTabBar && (
+        <div className="flex border-b border-[#2E3440]/60 bg-[#15171F] shrink-0 text-xs font-bold font-sans">
+          <button
+            onClick={() => setActiveSubTab('hyper')}
+            className={`flex-1 py-3 text-center border-b-2 flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+              activeSubTab === 'hyper'
+                ? 'border-[#76B900] text-white bg-[#1A1D27]'
+                : 'border-transparent text-gray-400 hover:text-gray-300'
+            }`}
+          >
+            <Sliders className="w-3.5 h-3.5 text-[#76B900]" />
+            <span>Lab Parameters</span>
+          </button>
+          <button
+            onClick={() => setActiveSubTab('analytics')}
+            className={`flex-1 py-3 text-center border-b-2 flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+              activeSubTab === 'analytics'
+                ? 'border-cyan-500 text-white bg-[#1A1D27]'
+                : 'border-transparent text-gray-400 hover:text-gray-300'
+            }`}
+          >
+            <TrendingUp className="w-3.5 h-3.5 text-cyan-400" />
+            <span>Performance Analytics</span>
+          </button>
+        </div>
+      )}
 
       {activeSubTab === 'hyper' ? (
         /* ======================== TAB 1: SYSTEM HYPERPARAMETERS ======================== */
@@ -597,6 +632,65 @@ export default function InferenceConfig({
                 );
               })}
             </div>
+          </div>
+
+          {/* Dynamic NIM Cloud Models segment */}
+          <div className="mx-4 mt-6">
+            <label className="block text-xs uppercase tracking-wider text-slate-300 font-bold mb-2 flex items-center justify-between">
+              <span>📡 Live NIM Cloud Discovery List</span>
+              {loadingModels ? (
+                <span className="text-[10px] text-[#76B900] animate-pulse">Scanning live models...</span>
+              ) : dynamicModels.length > 0 ? (
+                <span className="text-[10px] text-cyan-400 font-mono font-bold font-sans uppercase bg-cyan-950/40 px-1.5 py-0.5 rounded border border-cyan-500/20">
+                  {dynamicModels.length} models discovered
+                </span>
+              ) : (
+                <span className="text-[10px] text-amber-500 uppercase font-bold">Offline</span>
+              )}
+            </label>
+
+            {loadingModels ? (
+              <div className="py-4 border border-dashed border-gray-800 rounded-xl flex flex-col items-center justify-center gap-2 bg-[#1A1C30]/40">
+                <div className="w-4 h-4 border-2 border-[#76B900] border-t-transparent rounded-full animate-spin" />
+                <span className="text-[10px] text-gray-400 font-mono">Querying NVIDIA Discovery Endpoint...</span>
+              </div>
+            ) : dynamicModels.length > 0 ? (
+              <div className="flex flex-col gap-2 bg-[#1A1C23] border border-[#2E3440] rounded-xl p-3">
+                <p className="text-[10px] text-gray-400 leading-snug">
+                  NVIDIA servers report the following compatible endpoints are online. Select any model below to hot-swap:
+                </p>
+                <div className="relative">
+                  <select
+                    value={dynamicModels.includes(options.modelId) ? options.modelId : ''}
+                    onChange={(e) => {
+                      if (e.target.value) {
+                        handleSelectModel(e.target.value);
+                      }
+                    }}
+                    className="w-full bg-[#15171F] border border-gray-800 rounded-lg p-2.5 text-xs text-slate-200 font-mono focus:border-[#76B900] focus:ring-1 focus:ring-[#76B900] cursor-pointer outline-none transition-all"
+                  >
+                    <option value="" disabled className="text-gray-500">
+                      -- Choose a dynamic cloud model --
+                    </option>
+                    {dynamicModels.map((mId) => (
+                      <option key={mId} value={mId}>
+                        {mId}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                
+                <div className="text-[9px] text-gray-500 font-mono flex items-center justify-between mt-1">
+                  <span>Selected Model: <strong className="text-[#76B900]">{options.modelId}</strong></span>
+                </div>
+              </div>
+            ) : (
+              <div className="p-3 bg-[#1A1C23]/60 border border-gray-800/40 rounded-xl text-center">
+                <span className="text-[10px] text-gray-400">
+                  Provide your active NVIDIA API key to fetch and unlock hundreds of dynamically-discovered cloud NIM endpoints.
+                </span>
+              </div>
+            )}
           </div>
         </div>
       ) : (

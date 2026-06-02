@@ -26,8 +26,9 @@ function getFormattedTime() {
 
 export default function App() {
   // Navigation states
-  const [activeScreen, setActiveScreen] = React.useState<'chat' | 'labs' | 'hub' | 'sandbox'>('chat');
+  const [activeScreen, setActiveScreen] = React.useState<'chat' | 'labs' | 'hub' | 'sandbox' | 'telemetry'>('chat');
   const [drawerOpen, setDrawerOpen] = React.useState(false);
+  const [showRightTelemetry, setShowRightTelemetry] = React.useState(true);
 
   // Core Data states
   const [characters, setCharacters] = React.useState<Character[]>(INITIAL_CHARACTERS);
@@ -39,7 +40,7 @@ export default function App() {
 
   // Inference configs
   const [inference, setInference] = React.useState<InferenceOptions>({
-    apiKey: '',
+    apiKey: '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',
     modelId: 'meta/llama-3.1-70b-instruct',
     useNvidia: true, // Starts with NVIDIA NIM as default. Falls back to Gemini automatically if no key is configured.
     temperature: 0.75,
@@ -705,6 +706,37 @@ You have agreed to send the user a flirty, sweet personal selfie/photograph matc
             activeCharacter={activeChar ? { id: activeChar.id, name: activeChar.name } : null}
             messagesMap={messagesMap}
             characters={characters}
+            initialTab="hyper"
+            hideTabBar={true}
+            onSaveOverride={(charId, temp, topP, maxTokens) => {
+              setCharacters((prev) =>
+                prev.map((c) =>
+                  c.id === charId
+                    ? { ...c, customTemp: temp, customTopP: topP, customMaxTokens: maxTokens }
+                    : c
+                )
+              );
+              addLog(`INFERENCE_OVERRIDE: Applied custom parameters specifically to profile [${charId}]`);
+            }}
+            onSaveGlobal={(temp, topP, maxTokens) => {
+              setInference((prev) => ({ ...prev, temperature: temp, topP, maxTokens }));
+              addLog(`INFERENCE_GLOBAL: Updated default global template values: Temp=${temp}, TopP=${topP}`);
+            }}
+          />
+        );
+      case 'telemetry':
+        return (
+          <InferenceConfig
+            options={inference}
+            onChange={(opts) => {
+              setInference(opts);
+              addLog(`CONFIG_SET: Updated temperature: ${opts.temperature}, useNvidia: ${opts.useNvidia}`);
+            }}
+            activeCharacter={activeChar ? { id: activeChar.id, name: activeChar.name } : null}
+            messagesMap={messagesMap}
+            characters={characters}
+            initialTab="analytics"
+            hideTabBar={true}
             onSaveOverride={(charId, temp, topP, maxTokens) => {
               setCharacters((prev) =>
                 prev.map((c) =>
@@ -790,12 +822,24 @@ You have agreed to send the user a flirty, sweet personal selfie/photograph matc
             ACTIVE PORT: 3000 (INBOUND OK)
           </div>
           <button
+            onClick={() => setShowRightTelemetry(prev => !prev)}
+            className={`p-2 rounded-lg text-xs flex items-center gap-1.5 transition-all border ${
+              showRightTelemetry 
+                ? 'bg-[#1F2230] hover:bg-[#2A2E3D] text-gray-700 border-gray-800 hover:text-gray-300' 
+                : 'bg-emerald-950/45 border-emerald-500/50 text-[#76B900]'
+            }`}
+            title="Toggle Right Telemetry Panel. When hidden, the APK Simulator expands to full width."
+          >
+            <Monitor className="w-3.5 h-3.5" />
+            <span>{showRightTelemetry ? "Focused Phone View" : "Show Side Monitor"}</span>
+          </button>
+          <button
             onClick={() => {
               // Reset state to initial parameters
               setInference({
-                apiKey: '',
+                apiKey: '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',
                 modelId: 'meta/llama-3.1-70b-instruct',
-                useNvidia: false,
+                useNvidia: true,
                 temperature: 0.75,
                 maxTokens: 512,
                 topP: 0.90,
@@ -881,8 +925,8 @@ You have agreed to send the user a flirty, sweet personal selfie/photograph matc
           </div>
         </div>
 
-        {/* MIDDLE COLUMN: The central Android physically modeled smartphone (5 Cols) */}
-        <div className="col-span-1 lg:col-span-5 flex items-center justify-center self-stretch min-h-[600px]">
+        {/* MIDDLE COLUMN: The central Android physically modeled smartphone */}
+        <div className={`col-span-1 ${showRightTelemetry ? 'lg:col-span-5' : 'lg:col-span-9'} flex items-center justify-center self-stretch min-h-[600px] transition-all duration-300`}>
           
           {/* Main phone layout containing the drawer and nested screens */}
           <div className="relative w-full h-full flex items-center justify-center">
@@ -941,46 +985,48 @@ You have agreed to send the user a flirty, sweet personal selfie/photograph matc
         </div>
 
         {/* RIGHT COLUMN: Interactive live telemetry debugging terminal (4 Cols) */}
-        <div className="col-span-1 lg:col-span-4 flex flex-col bg-[#12141C] border border-[#222533] p-5 rounded-2xl gap-3 self-stretch max-h-[750px] lg:max-h-none overflow-hidden">
-          <div className="flex items-center justify-between pb-2 border-b border-[#222533]">
-            <div className="flex items-center gap-2">
-              <Terminal className="w-4 h-4 text-[#76B900]" />
-              <span className="text-xs uppercase tracking-widest text-[#ECEFF4] font-extrabold font-mono">
-                NVIDIA Cloud Telemetry
+        {showRightTelemetry && (
+          <div className="col-span-1 lg:col-span-4 flex flex-col bg-[#12141C] border border-[#222533] p-5 rounded-2xl gap-3 self-stretch max-h-[750px] lg:max-h-none overflow-hidden">
+            <div className="flex items-center justify-between pb-2 border-b border-[#222533]">
+              <div className="flex items-center gap-2">
+                <Terminal className="w-4 h-4 text-[#76B900]" />
+                <span className="text-xs uppercase tracking-widest text-[#ECEFF4] font-extrabold font-mono">
+                  NVIDIA Cloud Telemetry
+                </span>
+              </div>
+              <span className="text-[10px] bg-slate-800 text-gray-400 px-1.5 py-0.5 rounded font-mono uppercase tracking-wider">
+                Live Feed
               </span>
             </div>
-            <span className="text-[10px] bg-slate-800 text-gray-400 px-1.5 py-0.5 rounded font-mono uppercase tracking-wider">
-              Live Feed
-            </span>
-          </div>
 
-          <p className="text-xs text-gray-500 leading-snug">
-            Real-time inference dispatch tracking stats, latency benchmarks, and character dialogue prompts.
-          </p>
+            <p className="text-xs text-gray-500 leading-snug">
+              Real-time inference dispatch tracking stats, latency benchmarks, and character dialogue prompts.
+            </p>
 
-          {/* Interactive Logs terminal */}
-          <div className="flex-1 bg-[#0A0D14] rounded-xl p-3.5 border border-gray-900 font-mono text-[11px] text-[#A6E22E] overflow-y-auto whitespace-pre-wrap leading-relaxed select-text shadow-inner">
-            {logs.map((log, index) => (
-              <div 
-                key={index} 
-                className={`py-1 border-b border-[#12131C]/60 hover:bg-[#12131C]/40 ${
-                  log.includes('ERR:') 
-                    ? 'text-rose-400' 
-                    : log.includes('RESPONSE:') 
-                      ? 'text-cyan-400 font-bold' 
-                      : 'text-emerald-400'
-                }`}
-              >
-                {log}
-              </div>
-            ))}
-          </div>
+            {/* Interactive Logs terminal */}
+            <div className="flex-1 bg-[#0A0D14] rounded-xl p-3.5 border border-gray-900 font-mono text-[11px] text-[#A6E22E] overflow-y-auto whitespace-pre-wrap leading-relaxed select-text shadow-inner">
+              {logs.map((log, index) => (
+                <div 
+                  key={index} 
+                  className={`py-1 border-b border-[#12131C]/60 hover:bg-[#12131C]/40 ${
+                    log.includes('ERR:') 
+                      ? 'text-rose-400' 
+                      : log.includes('RESPONSE:') 
+                        ? 'text-cyan-400 font-bold' 
+                        : 'text-emerald-400'
+                  }`}
+                >
+                  {log}
+                </div>
+              ))}
+            </div>
 
-          <div className="flex items-center gap-1 text-[10px] text-gray-500 self-end font-mono">
-            <span>Grid state:</span>
-            <span className="text-emerald-500">OPTIMIZED_FP16</span>
+            <div className="flex items-center gap-1 text-[10px] text-gray-500 self-end font-mono">
+              <span>Grid state:</span>
+              <span className="text-emerald-500">OPTIMIZED_FP16</span>
+            </div>
           </div>
-        </div>
+        )}
 
       </div>
     </div>

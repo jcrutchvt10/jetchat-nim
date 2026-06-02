@@ -9,8 +9,8 @@ import { motion, AnimatePresence } from 'motion/react';
 
 interface AndroidEmulatorProps {
   children: React.ReactNode;
-  activeScreen: 'chat' | 'labs' | 'hub' | 'sandbox';
-  onScreenChange: (screen: 'chat' | 'labs' | 'hub' | 'sandbox') => void;
+  activeScreen: 'chat' | 'labs' | 'hub' | 'sandbox' | 'telemetry';
+  onScreenChange: (screen: 'chat' | 'labs' | 'hub' | 'sandbox' | 'telemetry') => void;
 }
 
 export default function AndroidEmulator({ children, activeScreen, onScreenChange }: AndroidEmulatorProps) {
@@ -21,6 +21,9 @@ export default function AndroidEmulator({ children, activeScreen, onScreenChange
   const [showNotificationShade, setShowNotificationShade] = React.useState(false);
   const [cudaMode, setCudaMode] = React.useState(true);
   const [soundEnabled, setSoundEnabled] = React.useState(true);
+
+  // Dynamic Immersive layout toggle state
+  const [immersive, setImmersive] = React.useState(false);
 
   // Sync real-time clock representing mobile phone time
   React.useEffect(() => {
@@ -50,6 +53,21 @@ export default function AndroidEmulator({ children, activeScreen, onScreenChange
     return () => clearInterval(interval);
   }, []);
 
+  // Dynamic APK/Mobile layout autodetect to enable immersive mode
+  React.useEffect(() => {
+    const checkLayout = () => {
+      const isMobileScreen = window.innerWidth < 768;
+      const isCapacitorOrApk = (window as any).Capacitor || 
+                               /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+      if (isMobileScreen || isCapacitorOrApk) {
+        setImmersive(true);
+      }
+    };
+    checkLayout();
+    window.addEventListener('resize', checkLayout);
+    return () => window.removeEventListener('resize', checkLayout);
+  }, []);
+
   const handlePowerButton = () => {
     if (powerOn) {
       setPowerOn(false);
@@ -62,6 +80,149 @@ export default function AndroidEmulator({ children, activeScreen, onScreenChange
     }
   };
 
+  // -------------------------------------------------------------
+  // IMMERSIVE FULLSCREEN MODE RENDERING (Perfect APK Scaling)
+  // -------------------------------------------------------------
+  if (immersive) {
+    return (
+      <div className="w-full h-full flex flex-col relative overflow-hidden bg-[#121318] select-none text-[#ECEFF4] font-sans">
+        {/* Float Action: Restore Emulator border/frame on desktop layout */}
+        <button
+          onClick={() => setImmersive(false)}
+          className="hidden md:flex absolute right-4 bottom-14 z-50 p-2 text-[10px] uppercase tracking-wider font-extrabold bg-[#12141C] hover:bg-[#1C1F2B] border border-[#2E3440] hover:border-[#76B900]/50 text-gray-400 hover:text-[#76B900] rounded-full shadow-xl items-center gap-1.5 transition-all outline-none"
+          title="Return to Phone Shell Mockup view"
+        >
+          <Smartphone className="w-3.5 h-3.5 text-[#76B900]" />
+          <span>Show Phone Border</span>
+        </button>
+
+        {/* OS Top Navigation System Drawer bar */}
+        <div 
+          onClick={() => setShowNotificationShade(!showNotificationShade)}
+          className="h-8 bg-black text-white px-4 flex items-center justify-between text-[11px] font-sans font-semibold select-none z-30 shrink-0 cursor-row-resize hover:bg-[#111] border-b border-gray-900"
+        >
+          <div className="flex items-center gap-1.5">
+            <span className="text-[8px] bg-[#76B900] text-gray-950 px-1 py-0.2 rounded font-extrabold uppercase scale-90 tracking-widest leading-none">NIM WORKSPACE</span>
+            <span className="text-gray-400 font-mono hidden sm:inline">| {time}</span>
+          </div>
+
+          {cudaMode && (
+            <span className="text-[8px] text-[#76B900] font-mono tracking-widest font-bold uppercase leading-none hidden xs:inline">
+              ⚡ LIVE ACCELERATION ACTIVE
+            </span>
+          )}
+
+          <div className="flex items-center gap-2">
+            <Signal className="w-3.5 h-3.5 text-gray-300" />
+            <Wifi className="w-3.5 h-3.5 text-gray-300" />
+            <div className="flex items-center gap-1">
+              <span className="text-[9px] text-gray-400">{battery}%</span>
+              <Battery className="w-4 h-4 text-[#76B900] fill-[#76B900]/10" />
+            </div>
+          </div>
+        </div>
+
+        {/* CLOUD DRAWER NOTIFICATION DRAG SCREEN */}
+        <AnimatePresence>
+          {showNotificationShade && (
+            <motion.div
+              initial={{ y: '-100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '-100%' }}
+              transition={{ type: 'spring', damping: 24, stiffness: 180 }}
+              className="absolute inset-x-0 top-8 max-w-xl mx-auto rounded-b-2xl bg-[#12141C] border border-[#2E3440] z-40 p-4 shadow-2xl flex flex-col gap-3"
+            >
+              <div className="flex justify-between items-center pb-2 border-b border-gray-800">
+                <span className="text-[9px] font-extrabold text-[#76B900] uppercase tracking-widest">NVIDIA SYSTEM CONTROLLER</span>
+                <button 
+                  onClick={() => setShowNotificationShade(false)}
+                  className="text-[9px] text-gray-400 bg-gray-800 hover:bg-gray-700 px-2.5 py-0.5 rounded cursor-pointer"
+                >
+                  Close
+                </button>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2">
+                <button
+                  onClick={() => setCudaMode(!cudaMode)}
+                  className={`p-2 rounded-lg border text-center flex flex-col items-center justify-center gap-1 transition-all cursor-pointer ${
+                    cudaMode
+                      ? 'bg-[#1E2D18] border-[#76B900] text-[#76B900]'
+                      : 'bg-[#1A1C23] border-[#2E3440] text-gray-500'
+                  }`}
+                >
+                  <Zap className="w-4 h-4" />
+                  <span className="text-[9px] font-bold">NVIDIA CUDA</span>
+                </button>
+
+                <button
+                  onClick={() => setSoundEnabled(!soundEnabled)}
+                  className={`p-2 rounded-lg border text-center flex flex-col items-center justify-center gap-1 transition-all cursor-pointer ${
+                    soundEnabled
+                      ? 'bg-indigo-950/45 border-indigo-500/50 text-indigo-400'
+                      : 'bg-[#1A1C23] border-[#2E3440] text-gray-500'
+                  }`}
+                >
+                  <Volume2 className="w-4 h-4" />
+                  <span className="text-[9px] font-bold">Vibrate/Snd</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    onScreenChange('labs');
+                    setShowNotificationShade(false);
+                  }}
+                  className="p-2 bg-[#1A1C23] hover:bg-[#202231] border border-[#2E3440] text-gray-300 rounded-lg text-center flex flex-col items-center justify-center gap-1 cursor-pointer"
+                >
+                  <RefreshCw className="w-4 h-4 text-[#76B900]" />
+                  <span className="text-[9px] font-bold">Labs settings</span>
+                </button>
+              </div>
+
+              <div className="text-[9px] font-mono text-gray-500 flex justify-between bg-black/60 p-2 rounded">
+                <span>SIM_SYS: ACTIVE</span>
+                <span className="text-emerald-400 font-bold">GPU_STATE: CALIBRATED</span>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* CONTAINER CHILD SCREEN LAYOUTS */}
+        <div className="flex-1 relative overflow-hidden flex flex-col">
+          {children}
+        </div>
+
+        {/* Android Native Pill / Navigation Bar (Fully dynamic and lightweight) */}
+        <div className="h-11 bg-black flex items-center justify-around px-8 border-t border-gray-900 shrink-0">
+          <button 
+            onClick={() => onScreenChange('chat')}
+            className="p-1 text-gray-600 hover:text-white transition-colors cursor-pointer"
+            title="Soft Back Button"
+          >
+            <svg className="w-4 h-4 fill-current text-slate-400" viewBox="0 0 24 24">
+              <polygon points="19,5 5,12 19,19" />
+            </svg>
+          </button>
+          <button 
+            onClick={() => onScreenChange('chat')}
+            className="w-1/3 py-1 cursor-pointer"
+            title="Soft Home Button"
+          >
+            <div className="w-16 h-1.5 bg-gray-600 hover:bg-slate-300 transition-all rounded-full mx-auto" />
+          </button>
+          <button 
+            onClick={() => onScreenChange('hub')}
+            className="w-3.5 h-3.5 border-2 border-slate-400 hover:border-white rounded transition-colors cursor-pointer"
+            title="Soft Overview Tasks"
+          />
+        </div>
+      </div>
+    );
+  }
+
+  // -------------------------------------------------------------
+  // TRADITIONAL DESKTOP MODEL EMBEDDED SMARTPHONE SHELL LAYOUT
+  // -------------------------------------------------------------
   return (
     <div className="flex h-full w-full max-w-sm mx-auto items-center justify-center p-2 md:p-4 select-none relative font-sans">
       
@@ -70,6 +231,15 @@ export default function AndroidEmulator({ children, activeScreen, onScreenChange
         
         {/* Dynamic Glowing border for NVIDIA styling */}
         <div className="absolute inset-0 border border-[#76B900]/20 rounded-[44px] pointer-events-none z-50" />
+
+        {/* Floating Toggle on Side of Frame for Desktop scale */}
+        <button
+          onClick={() => setImmersive(true)}
+          className="absolute left-4 bottom-14 z-50 p-2.5 bg-gray-950/90 hover:bg-black border border-gray-800 hover:border-[#76B900]/50 text-gray-400 hover:text-[#76B900] rounded-full shadow-lg flex items-center justify-center transition-all cursor-pointer outline-none"
+          title="Toggle Immersive Full-Screen Borderless view"
+        >
+          <Smartphone className="w-3.5 h-3.5" />
+        </button>
 
         {/* Side Hardware Buttons */}
         {/* Power Button */}
