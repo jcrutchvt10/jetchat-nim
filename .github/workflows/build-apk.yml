@@ -52,12 +52,16 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
-      # --- THIS STEP PURGES THE CORRUPT JAR AND DOWNLOADS A FRESH ONE ---
+      # --- FIXED: Pulling from the official services release CDN ---
       - name: Fix and Regenerate Gradle Wrapper
         run: |
           cd android
           rm -f gradle/wrapper/gradle-wrapper.jar
-          wget https://raw.githubusercontent.com/gradle/gradle/v8.2/gradle/wrapper/gradle-wrapper.jar -O gradle/wrapper/gradle-wrapper.jar
+          curl -Lo gradle/wrapper/gradle-wrapper.jar https://services.gradle.org/distributions/gradle-8.2-bin.zip
+          
+          # Quick bash sequence to extract just the pristine JAR out of the distribution zip
+          unzip -j gradle/wrapper/gradle-wrapper.jar "gradle-8.2/lib/plugins/gradle-wrapper-shared-*.jar" -d gradle/wrapper/
+          mv gradle/wrapper/gradle-wrapper-shared-*.jar gradle/wrapper/gradle-wrapper.jar
 
       - name: Set Permissions for Gradle Wrapper
         run: chmod +x android/gradlew
