@@ -1,0 +1,8 @@
+{
+  "name": "Jetchat Android NIM Portal",
+  "description": "An Android Jetchat emulator showcasing custom real-time conversational AI using Nvidia NIM and Gemini APIs, with rich Character.ai and Candy.ai interactive features.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
