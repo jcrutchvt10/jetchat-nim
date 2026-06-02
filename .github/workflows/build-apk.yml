@@ -52,12 +52,21 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
-      # --- FIXED: Pulling a standalone, pre-compiled wrapper binary ---
-      - name: Fix and Regenerate Gradle Wrapper
+      # --- FIXED: Use a transient clean installation of Gradle to regenerate a fresh local wrapper ---
+      - name: Purge and Regenerate Fresh Gradle Wrapper
         run: |
           cd android
           rm -f gradle/wrapper/gradle-wrapper.jar
-          curl -Lo gradle/wrapper/gradle-wrapper.jar https://github.com/gradle/gradle-distributions/raw/main/wrapper/gradle-wrapper.jar
+          
+          # Download a clean binary package to a temporary workspace directory
+          curl -sL https://services.gradle.org/distributions/gradle-8.2-bin.zip -o gradle-tmp.zip
+          unzip -q gradle-tmp.zip -d gradle-tmp-extracted
+          
+          # Use that fresh temporary global binary to regenerate your local project wrapper config cleanly
+          ./gradle-tmp-extracted/gradle-8.2/bin/gradle wrapper
+          
+          # Clean up the installation artifacts from the runner workspace
+          rm -rf gradle-tmp.zip gradle-tmp-extracted
 
       - name: Set Permissions for Gradle Wrapper
         run: chmod +x android/gradlew
