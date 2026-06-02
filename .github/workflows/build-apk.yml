@@ -37,7 +37,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
-          java-version: '17'
+          java-version: '17' # This installs Java 17 onto the runner path
 
       - name: Sync Capacitor Native Project
         run: npx cap sync android
@@ -52,20 +52,18 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gradle-
 
-      # --- FIXED: Use a transient clean installation of Gradle to regenerate a fresh local wrapper ---
       - name: Purge and Regenerate Fresh Gradle Wrapper
         run: |
           cd android
           rm -f gradle/wrapper/gradle-wrapper.jar
           
-          # Download a clean binary package to a temporary workspace directory
           curl -sL https://services.gradle.org/distributions/gradle-8.2-bin.zip -o gradle-tmp.zip
           unzip -q gradle-tmp.zip -d gradle-tmp-extracted
           
-          # Use that fresh temporary global binary to regenerate your local project wrapper config cleanly
+          # Force the generator task to explicitly evaluate under Java 17
+          export JAVA_HOME=$JAVA_HOME_17_X64
           ./gradle-tmp-extracted/gradle-8.2/bin/gradle wrapper
           
-          # Clean up the installation artifacts from the runner workspace
           rm -rf gradle-tmp.zip gradle-tmp-extracted
 
       - name: Set Permissions for Gradle Wrapper
@@ -74,7 +72,8 @@ jobs:
       - name: Compile Real APK (Debug Release Asset)
         run: |
           cd android
-          ./gradlew assembleDebug
+          # Explicitly pass the Java 17 home directory directly into the compilation command
+          ./gradlew assembleDebug -Dorg.gradle.java.home=$JAVA_HOME_17_X64
 
       - name: Upload Compiled Android 17 App Binary
         uses: actions/upload-artifact@v4
