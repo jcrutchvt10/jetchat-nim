@@ -22,15 +22,14 @@ jobs:
           node-version: 18
           cache: 'npm'
 
-      - name: Install Node Dependencies
-        run: npm ci || npm install
-      - name: Install dependencies
-        run: npm install --include=optional
+      - name: Install Node Dependencies (With Linux Bindings)
+        run: |
+          npm install --include=optional --os=linux --cpu=x64
 
-      - name: Build project
-        run: vite build && esbuild server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs
       - name: Build Web Application
-        run: npm run build
+        run: |
+          npx vite build
+          npx esbuild server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs
 
       - name: Setup Java Development Kit (JDK)
         uses: actions/setup-java@v4
