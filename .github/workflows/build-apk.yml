@@ -19,11 +19,11 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 22 # Bumped to meet Capacitor CLI requirements
+          node-version: 22
           cache: 'npm'
 
       - name: Install Node Dependencies
-        run: npm ci --include=optional # Using clean install for a reliable CI environment
+        run: npm ci --include=optional
 
       - name: Force Tailwind Linux Native Binary
         run: npm install @tailwindcss/oxide-linux-x64-gnu --no-save
@@ -51,6 +51,13 @@ jobs:
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
           restore-keys: |
             ${{ runner.os }}-gradle-
+
+      # --- THIS STEP PURGES THE CORRUPT JAR AND DOWNLOADS A FRESH ONE ---
+      - name: Fix and Regenerate Gradle Wrapper
+        run: |
+          cd android
+          rm -f gradle/wrapper/gradle-wrapper.jar
+          wget https://raw.githubusercontent.com/gradle/gradle/v8.2/gradle/wrapper/gradle-wrapper.jar -O gradle/wrapper/gradle-wrapper.jar
 
       - name: Set Permissions for Gradle Wrapper
         run: chmod +x android/gradlew
